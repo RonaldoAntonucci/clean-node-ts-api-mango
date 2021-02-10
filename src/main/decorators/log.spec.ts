@@ -1,10 +1,7 @@
+import { LogErrorRepository } from '../../data/protocols/log-error-repository'
+import { serverError } from '../../presentation/helpers/http-helper'
 import { Controller, HttpRequest, HttpResponse } from '../../presentation/protocols'
 import { LogControllerDecorator } from './log'
-
-interface SutTypes {
-  controllerStub: Controller
-  sut: LogControllerDecorator
-}
 
 const makeControllerStub = (): Controller => {
   class ControllerStub implements Controller {
@@ -21,11 +18,27 @@ const makeControllerStub = (): Controller => {
   return new ControllerStub()
 }
 
+const makeLogErrorRepositoryStub = (): LogErrorRepository => {
+  class LogErrorRepositoryStub implements LogErrorRepository {
+    async log (stack: string): Promise<void> {}
+  }
+
+  return new LogErrorRepositoryStub()
+}
+
+interface SutTypes {
+  controllerStub: Controller
+  sut: LogControllerDecorator
+  logErrorRepositoryStub: LogErrorRepository
+}
+
 const makeSut = (): SutTypes => {
   const controllerStub = makeControllerStub()
-  const sut = new LogControllerDecorator(controllerStub)
+  const logErrorRepositoryStub = makeLogErrorRepositoryStub()
 
-  return { sut, controllerStub }
+  const sut = new LogControllerDecorator(controllerStub, logErrorRepositoryStub)
+
+  return { sut, controllerStub, logErrorRepositoryStub }
 }
 
 describe('Log Controller Decorator', () => {
@@ -56,5 +69,26 @@ describe('Log Controller Decorator', () => {
       statusCode: 200,
       body: {}
     })
+  })
+
+  it('Should call LogErrorRepository with correct error if controller returns a server error', async () => {
+    const { sut, controllerStub, logErrorRepositoryStub } = makeSut()
+
+    const logEpy = jest.spyOn(logErrorRepositoryStub, 'log')
+
+    const fakeError = new Error()
+    fakeError.stack = 'any_stack'
+
+    const error = serverError(fakeError)
+
+    jest.spyOn(controllerStub, 'handle').mockImplementationOnce(async () => error)
+
+    const httpRequest = {
+      body: {}
+    }
+
+    await sut.handle(httpRequest)
+
+    expect(logEpy).toBeCalledWith(fakeError.stack)
   })
 })
