@@ -40,9 +40,9 @@ describe('Validation Composite', () => {
     expect(error).toEqual(new Error('field'))
   })
 
-  // it('Should not return if validation succeeds', () => {
-  //   const { sut } = makeSut()
-  //   const error = sut.validate({ field: 'any_valute' })
-  //   expect(error).toBeFalsy()
-  // })
+  it('Should not return if validation succeeds', () => {
+    const { sut } = makeSut()
+    const error = sut.validate({ field: 'any_valute' })
+    expect(error).toBeFalsy()
+  })
 })
