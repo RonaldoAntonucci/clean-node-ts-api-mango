@@ -1,7 +1,9 @@
+import { Collection } from 'mongodb'
 import { MongoHelper } from '../helpers/mongo-helper'
 import { AccountMongoRepository } from './account'
 
 describe('Account Mongo Repository', () => {
+  let accountCollection: Collection
   beforeAll(async () => {
     await MongoHelper.connect(process.env.MONGO_URL as string)
   })
@@ -11,7 +13,7 @@ describe('Account Mongo Repository', () => {
   })
 
   beforeEach(async () => {
-    const accountCollection = await MongoHelper.getCollection('accounts')
+    accountCollection = await MongoHelper.getCollection('accounts')
     await accountCollection.deleteMany({})
   })
 
@@ -19,7 +21,7 @@ describe('Account Mongo Repository', () => {
     return new AccountMongoRepository()
   }
 
-  it('Should return an account on success', async () => {
+  it('Should return an account on add success', async () => {
     const sut = makeSut()
     const account = await sut.add({
       name: 'any_name',
@@ -27,6 +29,20 @@ describe('Account Mongo Repository', () => {
       password: 'any_password'
     })
 
+    expect(account).toHaveProperty('name', 'any_name')
+    expect(account).toHaveProperty('email', 'any_email@mail.com')
+    expect(account).toHaveProperty('password', 'any_password')
+    expect(account).toHaveProperty('id')
+  })
+
+  it('Should return an account on loadByEmail success', async () => {
+    const sut = makeSut()
+    await accountCollection.insertOne({
+      name: 'any_name',
+      email: 'any_email@mail.com',
+      password: 'any_password'
+    })
+    const account = await sut.loadByEmail('any_email@mail.com')
     expect(account).toHaveProperty('name', 'any_name')
     expect(account).toHaveProperty('email', 'any_email@mail.com')
     expect(account).toHaveProperty('password', 'any_password')
