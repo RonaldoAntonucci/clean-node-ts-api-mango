@@ -156,4 +156,13 @@ describe('DbAuthentication UseCase', () => {
     await sut.auth(makeFakeAuthRequest())
     expect(updateSpy).toHaveBeenCalledWith('any_id', 'any_token')
   })
+
+  it('Should throw if UpdateAcessTokenRepository throws', async () => {
+    const { sut, updateAcessTokenRepositoryStub } = makeSut()
+    jest.spyOn(updateAcessTokenRepositoryStub, 'update').mockImplementationOnce(async () => {
+      throw new Error()
+    })
+
+    await expect(sut.auth(makeFakeAuthRequest())).rejects.toThrow()
+  })
 })
